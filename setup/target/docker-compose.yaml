@@ -1,0 +1,32 @@
+version: '2.2'
+
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:9.4.6-ce.0
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - gitlab-config:/etc/gitlab
+      - gitlab-data:/var/opt/gitlab
+      - gitlab-logs:/var/log/gitlab
+    cpus: 4
+    mem_limit: 4g
+    memswap_limit: 0
+    oom_kill_disable: true
+  monitor:
+    image: google/cadvisor
+    command: -storage_driver=influxdb -storage_driver_db=cadvisor -storage_driver_host=10.28.18.9:8086
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+
+volumes:
+  - gitlab-config
+  - gitlab-logs
+  - gitlab-data
