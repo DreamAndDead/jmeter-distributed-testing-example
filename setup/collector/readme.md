@@ -4,8 +4,6 @@
 
 ### setup
 
-[influxdb docker]: https://hub.docker.com/_/influxdb/
-
 influxdb 同样使用 docker 启动，非常简单，参考 [docker hub][influxdb docker]。
 
 因为在这个结构中，influxdb 收集的数据来自多个地方，使用了多种数据采集方式
@@ -13,7 +11,7 @@ influxdb 同样使用 docker 启动，非常简单，参考 [docker hub][influxd
 - http for jmeter and cadvisor
 - udp for gitlab
 
-配置已经在 influxdb 的[配置文件][./conf/influxdb.conf]中打开，包括端口地址等相关参数。
+配置已经在 influxdb 的[配置文件](./conf/influxdb.conf)中打开，包括端口地址等相关参数。
 
 在启动 influxdb 容器之后，就要为要采集的数据建立数据库，分门别类。
 
@@ -24,11 +22,9 @@ curl -X POST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE cad
 curl -X POST http://localhost:8086/query --data-urlencode "q=CREATE DATABASE gitlab"
 ```
 
-剩下的就是应用自己接入相应的数据库，传输 metric 数据即可。
+剩下就需要应用自身接入相应的数据库，传输 metric 数据。
 
 ### jmeter metric
-
-jmeter metric 如何对接 influxdb 以及如何解读 metric 数据的格式。
 
 在文章中也提到过，jmeter Backend Listener 有两种，influxdb 与 graphite，这里分别来介绍。
 
@@ -141,41 +137,39 @@ jmeter 生成 graphite 类型的数据，传输至 2003 端口。
 
 ![](./jmeter-graphite-listener.png)
 
-其中的配置类比 influxdb。
+其中配置项的含义，参考 [influxdb](#influxdb way)。
 
 
+在收集数据之后，[官方][jmeter graphite metric]对相应数据的含义作出了解读。
 
-在收集数据之后，[官方][jmeter graphite metric]对数据结构作出了解读。
+rootMetricsPrefix， samplerName, percentileValue 是变量
+- rootMetricsPrefix 是在配置项中定义的前缀
+- samplerName 是 jmeter sampler 的名称 （取样器），包括一个特殊的 all （全部 sampler）
+- percentileValue 是配置项中定义的相应百分比的值，默认是 90，95，99
 
-rootMetricsPrefix是上面自己配置的值
-- <rootMetricsPrefix>test.minAT, Min active threads
-- <rootMetricsPrefix>test.maxAT, Max active threads
-- <rootMetricsPrefix>test.meanAT, Mean active threads
-- <rootMetricsPrefix>test.startedT, Started threads
-- <rootMetricsPrefix>test.endedT, Finished threads 
+- rootMetricsPrefix.test.minAT, Min active threads
+- rootMetricsPrefix.test.maxAT, Max active threads
+- rootMetricsPrefix.test.meanAT, Mean active threads
+- rootMetricsPrefix.test.startedT, Started threads
+- rootMetricsPrefix.test.endedT, Finished threads 
+- rootMetricsPrefix.samplerName.ok.count, Number of successful responses for sampler name
+- rootMetricsPrefix.samplerName.h.count, Server hits per seconds, this metric cumulates Sample Result and Sub results (if using Transaction Controller, "Generate parent sampler" should be unchecked)
+- rootMetricsPrefix.samplerName.ok.min, Min response time for successful responses of sampler name
+- rootMetricsPrefix.samplerName.ok.max, Max response time for successful responses of sampler name
+- rootMetricsPrefix.samplerName.ok.avg, Average response time for successful responses of sampler name.
+- rootMetricsPrefix.samplerName.ok.pct *percentileValue* , Percentile computed for successful responses of sampler name. There will be one metric for each calculated value.
+- rootMetricsPrefix.samplerName.ko.count, Number of failed responses for sampler name
+- rootMetricsPrefix.samplerName.ko.min, Min response time for failed responses of sampler name
+- rootMetricsPrefix.samplerName.ko.max, Max response time for failed responses of sampler name
+- rootMetricsPrefix.samplerName.ko.avg, Average response time for failed responses of sampler name.
+- rootMetricsPrefix.samplerName.ko.pct *percentileValue* , Percentile computed for failed responses of sampler name. There will be one metric for each calculated value.
+- rootMetricsPrefix.samplerName.a.count, Number of responses for sampler name (sum of ok.count and ko.count)
+- rootMetricsPrefix.samplerName.a.min, Min response time for responses of sampler name (min of ok.count and ko.count)
+- rootMetricsPrefix.samplerName.a.max, Max response time for responses of sampler name (max of ok.count and ko.count)
+- rootMetricsPrefix.samplerName.a.avg, Average response time for responses of sampler name (avg of ok.count and ko.count)
+- rootMetricsPrefix.samplerName.a.pct *percentileValue* , Percentile computed for responses of sampler name. There will be one metric for each calculated value. (calculated on the totals for OK and failed samples) 
 
-响应时间的统计情况，samplerName 是取样器的值，包括一个特殊的 all（包含所有的sampler的和）。
-percentileValue是上面自己配置的百分比，默认是90，95，99
-- <rootMetricsPrefix><samplerName>.ok.count, Number of successful responses for sampler name
-- <rootMetricsPrefix><samplerName>.h.count, Server hits per seconds, this metric cumulates Sample Result and Sub results (if using Transaction Controller, "Generate parent sampler" should be unchecked)
-- <rootMetricsPrefix><samplerName>.ok.min, Min response time for successful responses of sampler name
-- <rootMetricsPrefix><samplerName>.ok.max, Max response time for successful responses of sampler name
-- <rootMetricsPrefix><samplerName>.ok.avg, Average response time for successful responses of sampler name.
-- <rootMetricsPrefix><samplerName>.ok.pct<percentileValue>, Percentile computed for successful responses of sampler name. There will be one metric for each calculated value.
-
-- <rootMetricsPrefix><samplerName>.ko.count, Number of failed responses for sampler name
-- <rootMetricsPrefix><samplerName>.ko.min, Min response time for failed responses of sampler name
-- <rootMetricsPrefix><samplerName>.ko.max, Max response time for failed responses of sampler name
-- <rootMetricsPrefix><samplerName>.ko.avg, Average response time for failed responses of sampler name.
-- <rootMetricsPrefix><samplerName>.ko.pct<percentileValue>, Percentile computed for failed responses of sampler name. There will be one metric for each calculated value.
-
-- <rootMetricsPrefix><samplerName>.a.count, Number of responses for sampler name (sum of ok.count and ko.count)
-- <rootMetricsPrefix><samplerName>.a.min, Min response time for responses of sampler name (min of ok.count and ko.count)
-- <rootMetricsPrefix><samplerName>.a.max, Max response time for responses of sampler name (max of ok.count and ko.count)
-- <rootMetricsPrefix><samplerName>.a.avg, Average response time for responses of sampler name (avg of ok.count and ko.count)
-- <rootMetricsPrefix><samplerName>.a.pct<percentileValue>, Percentile computed for responses of sampler name. There will be one metric for each calculated value. (calculated on the totals for OK and failed samples) 
-
-实际由 influxdb 来看，结构输出是这样的。
+实际从 influxdb 来看，数据结构是这样的。
 
 ```
 $ docker exec -it collector_db_1 influx --database 'graphite' -execute 'show field keys'
@@ -609,11 +603,12 @@ gitlab 的[官方文档][gitlab metric influxdb]描述的很清楚
 
 grafana 也使用 docker 部署，参考 [docker hub][docker hub grafana]。
 
-grafana 如何制定自己的数据呈现规则，参考 [config grafana][#config grafana] 一节，
+grafana 如何制定自己的数据呈现规则，参考 [config grafana](#config grafana) 一节，
 关键在于解读 influxdb 的数据结构。
 
 
 
+[influxdb docker]: https://hub.docker.com/_/influxdb/
 [jmeter metric influxdb]: http://jmeter.apache.org/usermanual/realtime-results.html
 [jmeter backend listener config]: http://jmeter.apache.org/usermanual/component_reference.html#Backend_Listener
 [jmeter graphite metric]: http://jmeter.apache.org/usermanual/realtime-results.html#metrics-response-times
