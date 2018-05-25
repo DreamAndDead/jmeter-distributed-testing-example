@@ -137,7 +137,7 @@ jmeter 生成 graphite 类型的数据，传输至 2003 端口。
 
 ![](./jmeter-graphite-listener.png)
 
-其中配置项的含义，参考 [influxdb](#influxdb way)。
+其中配置项的含义，参考 [influxdb](#influxdb-way)。
 
 
 在收集数据之后，[官方][jmeter graphite metric]对相应数据的含义作出了解读。
@@ -603,7 +603,7 @@ gitlab 的[官方文档][gitlab metric influxdb]描述的很清楚
 
 grafana 也使用 docker 部署，参考 [docker hub][docker hub grafana]。
 
-grafana 如何制定自己的数据呈现规则，参考 [config grafana](#config grafana) 一节，
+grafana 如何制定自己的数据呈现规则，参考 [config grafana](#config-grafana) 一节，
 关键在于解读 influxdb 的数据结构。
 
 
